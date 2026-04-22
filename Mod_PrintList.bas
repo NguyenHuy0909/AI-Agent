@@ -173,12 +173,14 @@ Public Sub ListAllFilesToSheet()
     ws.AutoFilterMode = False
 
     ' --- Header row ---
-    With ws.Cells(1, 1) : .Value = "File Name"       : End With
-    With ws.Cells(1, 2) : .Value = "Relative Path"   : End With
-    With ws.Cells(1, 3) : .Value = "Date Modified"   : End With
-    With ws.Cells(1, 4) : .Value = "Size (KB)"       : End With
+    ' A: File Name | B: Folder Lv1 | C: Folder Lv2 | D: Date Modified | E: Size (KB)
+    With ws.Cells(1, 1) : .Value = "File Name"      : End With
+    With ws.Cells(1, 2) : .Value = "Folder Lv1"     : End With
+    With ws.Cells(1, 3) : .Value = "Folder Lv2"     : End With
+    With ws.Cells(1, 4) : .Value = "Date Modified"  : End With
+    With ws.Cells(1, 5) : .Value = "Size (KB)"      : End With
 
-    With ws.Range("A1:D1")
+    With ws.Range("A1:E1")
         .Font.Bold = True
         .Interior.Color = RGB(68, 114, 196)
         .Font.Color = RGB(255, 255, 255)
@@ -195,10 +197,10 @@ Public Sub ListAllFilesToSheet()
     Call ScanFolder(fso, rootFolder, Mod_Init.gOutputFolderPath, ws, rowIdx)
 
     ' --- Formatting ---
-    ws.Columns("A:B").AutoFit
-    ws.Columns("C").NumberFormat = "yyyy/mm/dd hh:mm:ss"
-    ws.Columns("C").AutoFit
+    ws.Columns("A:C").AutoFit
+    ws.Columns("D").NumberFormat = "yyyy/mm/dd hh:mm:ss"
     ws.Columns("D").AutoFit
+    ws.Columns("E").AutoFit
 
     ' Zebra stripe rows
     Dim r As Long
@@ -211,7 +213,7 @@ Public Sub ListAllFilesToSheet()
     Next r
 
     ' AutoFilter on header
-    ws.Range("A1:D1").AutoFilter
+    ws.Range("A1:E1").AutoFilter
 
     ' Activate sheet
     ws.Activate
@@ -231,16 +233,20 @@ Private Sub ScanFolder(ByVal fso As Object, _
     Dim fileObj As Object
     Dim subFolder As Object
     Dim relFolder As String
+    Dim folderParts() As String
 
     ' Write each file in current folder
     For Each fileObj In folder.Files
-        ' Relative path of the parent folder (excluding output root)
+        ' Relative path of parent folder (excluding output root), e.g. "rpm1500\SPEC_A"
         relFolder = Mid(fileObj.ParentFolder.Path, Len(rootPath) + 2)
+        folderParts = Split(relFolder, "\")
 
         ws.Cells(rowIdx, 1).Value = fileObj.Name
-        ws.Cells(rowIdx, 2).Value = relFolder
-        ws.Cells(rowIdx, 3).Value = fileObj.DateLastModified
-        ws.Cells(rowIdx, 4).Value = Round(fileObj.Size / 1024, 2)
+        ' Lv1: first folder segment; Lv2: second folder segment (empty if not present)
+        ws.Cells(rowIdx, 2).Value = IIf(UBound(folderParts) >= 0, folderParts(0), "")
+        ws.Cells(rowIdx, 3).Value = IIf(UBound(folderParts) >= 1, folderParts(1), "")
+        ws.Cells(rowIdx, 4).Value = fileObj.DateLastModified
+        ws.Cells(rowIdx, 5).Value = Round(fileObj.Size / 1024, 2)
 
         rowIdx = rowIdx + 1
     Next fileObj
